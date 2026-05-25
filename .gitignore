@@ -1,0 +1,12 @@
+# Compiled output
+bin/
+*.class
+
+# Runtime-generated files
+ai_ships.txt
+*save*.txt
+gui_stderr.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
