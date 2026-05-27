@@ -118,10 +118,21 @@ public class ModelTests {
         Board enemyView = new Board();
         int[] first = ai.chooseTarget(enemyView);
         enemyView.getCell(first[0], first[1]).markHit();
-        ai.reportResult(first[0], first[1], true, false);
+        ai.reportResult(first[0], first[1], true, false, 0);
         int[] next = ai.chooseTarget(enemyView);
         boolean adjacent = Math.abs(next[0] - first[0]) + Math.abs(next[1] - first[1]) == 1;
         check(adjacent, "advanced ai targets adjacent after hit");
+
+        check(first[0] == 0 && first[1] == 0, "advanced ai opens at top-left corner");
+
+        AdvancedAI ai2 = new AdvancedAI();
+        Board view2 = new Board();
+        int[] m1 = ai2.chooseTarget(view2);
+        view2.getCell(m1[0], m1[1]).markHit();
+        ai2.reportResult(m1[0], m1[1], false, false, 0);
+        int[] m2 = ai2.chooseTarget(view2);
+        check((m1[0] + m1[1]) % 2 == 0 && (m2[0] + m2[1]) % 2 == 0,
+                "advanced ai hunts on parity grid for smallest=2");
     }
 
     static void testAIPlayer() {

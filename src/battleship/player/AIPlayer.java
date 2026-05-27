@@ -27,8 +27,8 @@ public class AIPlayer extends Player {
     public int[] makeMove() { return strategy.chooseTarget(targetBoard); }
 
     /** Pass the result of the last shot to the strategy (advanced hunt/target). */
-    public void reportResult(int r, int c, boolean hit, boolean sunk) {
-        strategy.reportResult(r, c, hit, sunk);
+    public void reportResult(int r, int c, boolean hit, boolean sunk, int sunkSize) {
+        strategy.reportResult(r, c, hit, sunk, sunkSize);
     }
 
     public void setStrategy(AIStrategy s) { this.strategy = s; }

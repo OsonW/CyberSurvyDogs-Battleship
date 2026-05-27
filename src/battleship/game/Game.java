@@ -15,6 +15,7 @@ import java.util.Random;
 import battleship.ai.AdvancedAI;
 import battleship.ai.SimpleAI;
 import battleship.model.Board;
+import battleship.model.Fleet;
 import battleship.player.AIPlayer;
 import battleship.player.HumanPlayer;
 import battleship.player.Player;
@@ -76,7 +77,8 @@ public class Game {
         String result = humanPlayer.getOwnBoard().receiveAttack(r, c);
         boolean hit = result.startsWith("HIT") || result.startsWith("SUNK");
         boolean sunk = result.startsWith("SUNK");
-        aiPlayer.reportResult(r, c, hit, sunk);
+        int sunkSize = sunk ? Fleet.sizeFor(result.substring("SUNK:".length())) : 0;
+        aiPlayer.reportResult(r, c, hit, sunk, sunkSize);
         aiPlayer.getTargetBoard().getCell(r, c).markHit();
         lastAIResult = result;
         if (checkWin()) endGame();

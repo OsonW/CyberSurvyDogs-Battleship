@@ -49,5 +49,5 @@ public class SimpleAI implements AIStrategy {
     }
 
     /** Simple AI ignores results; it has no hunt/target behaviour. */
-    public void reportResult(int r, int c, boolean hit, boolean sunk) { /* no-op */ }
+    public void reportResult(int r, int c, boolean hit, boolean sunk, int sunkSize) { /* no-op */ }
 }

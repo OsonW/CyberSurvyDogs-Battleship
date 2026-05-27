@@ -18,6 +18,9 @@ public interface AIStrategy {
     /** Arrange a full fleet on the given board. */
     void placeShips(Board board);
 
-    /** Inform the strategy of the outcome of its last shot so it can adapt. */
-    void reportResult(int r, int c, boolean hit, boolean sunk);
+    /**
+     * Inform the strategy of the outcome of its last shot so it can adapt.
+     * @param sunkSize size of the ship just sunk, or 0 if no ship sunk on this shot.
+     */
+    void reportResult(int r, int c, boolean hit, boolean sunk, int sunkSize);
 }
