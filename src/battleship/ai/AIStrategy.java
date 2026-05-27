@@ -1,6 +1,6 @@
 /*
  * Battleship Tournament - ICS4U Final Summative
- * Group: CyberSurvyDogs - <Member 1>, <Member 2>, <Member 3>, <Member 4>
+ * Group: CyberSurvyDogs - Olin Wang, Oson Wang, Willey Yao
  * Date: 2026
  * File: AIStrategy.java
  *

@@ -1,6 +1,6 @@
 /*
  * Battleship Tournament - ICS4U Final Summative
- * Group: CyberSurvyDogs - <Member 1>, <Member 2>, <Member 3>, <Member 4>
+ * Group: CyberSurvyDogs - Olin Wang, Oson Wang, Willey Yao
  * Date: 2026
  * File: GridPanel.java
  *
@@ -17,6 +17,8 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -39,10 +41,18 @@ public class GridPanel extends JPanel {
     private static final Color HIT = new Color(200, 40, 40);
     private static final Color SUNK = new Color(120, 0, 0);
     private static final Color MISS = new Color(230, 230, 235);
+    private static final Color PREVIEW_VALID = new Color(80, 200, 100);
+    private static final Color PREVIEW_INVALID = new Color(220, 70, 70);
 
     private final JButton[][] buttons = new JButton[Board.SIZE][Board.SIZE];
     private CellClickListener listener;
     private boolean clickable;
+
+    // Placement preview state. previewSize > 0 means a preview is active.
+    private Board previewBoard;
+    private int previewSize;
+    private boolean previewHorizontal = true;
+    private int hoverRow = -1, hoverCol = -1;
 
     public GridPanel(String title, boolean clickable) {
         this.clickable = clickable;
@@ -70,6 +80,15 @@ public class GridPanel extends JPanel {
                             listener.onCellClick(rr, cc);
                     }
                 });
+                b.addMouseListener(new MouseAdapter() {
+                    public void mouseEntered(MouseEvent e) {
+                        if (previewSize > 0 && previewBoard != null) {
+                            hoverRow = rr;
+                            hoverCol = cc;
+                            renderOwnBoard(previewBoard);
+                        }
+                    }
+                });
                 buttons[r][c] = b;
                 add(b);
             }
@@ -84,6 +103,27 @@ public class GridPanel extends JPanel {
     public void setCellClickListener(CellClickListener l) { this.listener = l; }
 
     public void setClickable(boolean b) { this.clickable = b; }
+
+    /**
+     * Turn on a green/red ship preview that follows the mouse. Pass size = 0
+     * (or call clearPlacementPreview) to turn it off.
+     */
+    public void setPlacementPreview(Board board, int size, boolean horizontal) {
+        this.previewBoard = board;
+        this.previewSize = size;
+        this.previewHorizontal = horizontal;
+        if (board != null) renderOwnBoard(board);
+    }
+
+    /** Disable the placement preview and clear any active overlay. */
+    public void clearPlacementPreview() {
+        this.previewSize = 0;
+        this.hoverRow = -1;
+        this.hoverCol = -1;
+        Board last = this.previewBoard;
+        this.previewBoard = null;
+        if (last != null) renderOwnBoard(last);
+    }
 
     /** Render the player's own board: ships are visible, plus incoming hits/misses. */
     public void renderOwnBoard(Board board) {
@@ -103,6 +143,30 @@ public class GridPanel extends JPanel {
                 } else {
                     b.setBackground(WATER);
                 }
+            }
+        }
+        applyPreviewOverlay();
+    }
+
+    /** Paint a green/red overlay where the current ship would land at the hovered cell. */
+    private void applyPreviewOverlay() {
+        if (previewSize <= 0 || previewBoard == null || hoverRow < 0 || hoverCol < 0) return;
+        boolean valid = true;
+        for (int i = 0; i < previewSize; i++) {
+            int rr = previewHorizontal ? hoverRow : hoverRow + i;
+            int cc = previewHorizontal ? hoverCol + i : hoverCol;
+            if (rr < 0 || rr >= Board.SIZE || cc < 0 || cc >= Board.SIZE
+                    || previewBoard.getCell(rr, cc).hasShip()) {
+                valid = false;
+                break;
+            }
+        }
+        Color color = valid ? PREVIEW_VALID : PREVIEW_INVALID;
+        for (int i = 0; i < previewSize; i++) {
+            int rr = previewHorizontal ? hoverRow : hoverRow + i;
+            int cc = previewHorizontal ? hoverCol + i : hoverCol;
+            if (rr >= 0 && rr < Board.SIZE && cc >= 0 && cc < Board.SIZE) {
+                buttons[rr][cc].setBackground(color);
             }
         }
     }

@@ -1,6 +1,6 @@
 /*
  * Battleship Tournament - ICS4U Final Summative
- * Group: CyberSurvyDogs - <Member 1>, <Member 2>, <Member 3>, <Member 4>
+ * Group: CyberSurvyDogs - Olin Wang, Oson Wang, Willey Yao
  * Date: 2026
  * File: BattleshipFrame.java
  *
@@ -19,11 +19,14 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -33,6 +36,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
+import javax.swing.KeyStroke;
 import javax.swing.Timer;
 
 import battleship.ai.SimpleAI;
@@ -76,10 +80,24 @@ public class BattleshipFrame extends JFrame {
         root.add(buildPlayPanel(), "play");
         setContentPane(root);
 
+        installRotateKey();
         resetSetup();
         cards.show(root, "setup");
         pack();
         setLocationRelativeTo(null);
+    }
+
+    /** Bind the R key to rotate ship orientation while the setup screen is showing. */
+    private void installRotateKey() {
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0), "rotate");
+        root.getActionMap().put("rotate", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                if (orientToggle != null && orientToggle.isShowing()) {
+                    orientToggle.doClick();
+                }
+            }
+        });
     }
 
     // =================== Menu ===================
@@ -129,10 +147,12 @@ public class BattleshipFrame extends JFrame {
         placeInstruction = new JLabel();
         controls.add(placeInstruction);
 
-        orientToggle = new JToggleButton("Orientation: Horizontal");
+        orientToggle = new JToggleButton("Orientation: Horizontal  (R to rotate)");
         orientToggle.addActionListener(e -> {
             horizontal = !orientToggle.isSelected();
-            orientToggle.setText("Orientation: " + (horizontal ? "Horizontal" : "Vertical"));
+            orientToggle.setText("Orientation: "
+                    + (horizontal ? "Horizontal" : "Vertical") + "  (R to rotate)");
+            refreshPlacementPreview();
         });
         controls.add(orientToggle);
 
@@ -165,8 +185,22 @@ public class BattleshipFrame extends JFrame {
         fleetToPlace = Fleet.standardFleet();
         placeIndex = 0;
         if (startButton != null) startButton.setEnabled(false);
-        if (setupGrid != null) setupGrid.renderOwnBoard(humanSetupBoard);
+        if (setupGrid != null) {
+            setupGrid.renderOwnBoard(humanSetupBoard);
+            refreshPlacementPreview();
+        }
         updateInstruction();
+    }
+
+    /** Push the current ship's size + orientation into the setup grid's preview. */
+    private void refreshPlacementPreview() {
+        if (setupGrid == null) return;
+        if (placeIndex >= fleetToPlace.size()) {
+            setupGrid.clearPlacementPreview();
+        } else {
+            Ship next = fleetToPlace.get(placeIndex);
+            setupGrid.setPlacementPreview(humanSetupBoard, next.getSize(), horizontal);
+        }
     }
 
     private void updateInstruction() {
@@ -185,6 +219,7 @@ public class BattleshipFrame extends JFrame {
         if (humanSetupBoard.placeShip(copy, r, c, horizontal)) {
             placeIndex++;
             setupGrid.renderOwnBoard(humanSetupBoard);
+            refreshPlacementPreview();
             updateInstruction();
             if (placeIndex >= fleetToPlace.size()) startButton.setEnabled(true);
         } else {
@@ -198,6 +233,7 @@ public class BattleshipFrame extends JFrame {
         new SimpleAI().placeShips(humanSetupBoard);
         placeIndex = fleetToPlace.size();
         setupGrid.renderOwnBoard(humanSetupBoard);
+        setupGrid.clearPlacementPreview();
         updateInstruction();
         startButton.setEnabled(true);
     }
