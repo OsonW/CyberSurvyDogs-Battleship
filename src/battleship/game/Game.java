@@ -46,7 +46,11 @@ public class Game {
         return currentTurn;
     }
 
-    /** Place the AI fleet, record it to file, and ensure a starting player. */
+    /**
+     * Place the AI fleet and record it to file. The starting player should be
+     * chosen beforehand via setCurrentTurnHuman(...) or coinToss(); if neither
+     * was called, fall back to a random toss so a starter is always set.
+     */
     public void startGame() {
         aiPlayer.placeShips();
         aiPlayer.getOwnBoard().saveToFile("ai_ships.txt");

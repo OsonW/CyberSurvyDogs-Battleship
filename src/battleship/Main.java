@@ -11,11 +11,13 @@ package battleship;
 import javax.swing.SwingUtilities;
 
 import battleship.gui.BattleshipFrame;
+import battleship.gui.UITheme;
 
 public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
+                UITheme.apply();
                 BattleshipFrame frame = new BattleshipFrame();
                 frame.setVisible(true);
             }

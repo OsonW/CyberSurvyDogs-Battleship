@@ -13,6 +13,7 @@ package battleship.gui;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -25,6 +26,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 import battleship.model.Board;
 import battleship.model.Cell;
@@ -36,13 +38,16 @@ public class GridPanel extends JPanel {
         void onCellClick(int row, int col);
     }
 
-    private static final Color WATER = new Color(96, 150, 186);
-    private static final Color SHIP = new Color(90, 90, 90);
-    private static final Color HIT = new Color(200, 40, 40);
-    private static final Color SUNK = new Color(120, 0, 0);
-    private static final Color MISS = new Color(230, 230, 235);
-    private static final Color PREVIEW_VALID = new Color(80, 200, 100);
-    private static final Color PREVIEW_INVALID = new Color(220, 70, 70);
+    private static final int CELL = 34;
+    private static final Color WATER = new Color(0x60, 0x96, 0xBA);
+    private static final Color SHIP = new Color(0x4A, 0x52, 0x59);
+    private static final Color HIT = new Color(0xD1, 0x3A, 0x3A);
+    private static final Color SUNK = new Color(0x8C, 0x16, 0x16);
+    private static final Color MISS = new Color(0xE3, 0xEA, 0xEF);
+    private static final Color PREVIEW_VALID = new Color(0x4F, 0xB5, 0x6A);
+    private static final Color PREVIEW_INVALID = new Color(0xDB, 0x5A, 0x5A);
+    private static final Color GRID_LINE = new Color(0xB6, 0xC6, 0xD2);
+    private static final Color HEADER_BG = new Color(0xD7, 0xE2, 0xEB);
 
     private final JButton[][] buttons = new JButton[Board.SIZE][Board.SIZE];
     private CellClickListener listener;
@@ -56,8 +61,9 @@ public class GridPanel extends JPanel {
 
     public GridPanel(String title, boolean clickable) {
         this.clickable = clickable;
-        setBorder(BorderFactory.createTitledBorder(title));
+        setBorder(UITheme.section(title));
         setLayout(new GridLayout(Board.SIZE + 1, Board.SIZE + 1, 1, 1));
+        UITheme.fill(this, GRID_LINE); // 1px gaps show through as grid lines
 
         // Header row: blank corner + column numbers 1..10.
         add(corner(""));
@@ -68,12 +74,16 @@ public class GridPanel extends JPanel {
             for (int c = 0; c < Board.SIZE; c++) {
                 final int rr = r, cc = c;
                 JButton b = new JButton();
-                b.setPreferredSize(new Dimension(34, 34));
+                // Force a basic UI so setBackground fills solid under Nimbus.
+                b.setUI(new BasicButtonUI());
+                b.setPreferredSize(new Dimension(CELL, CELL));
                 b.setMargin(new Insets(0, 0, 0, 0));
+                b.setFont(b.getFont().deriveFont(Font.BOLD, 14f));
                 b.setBackground(WATER);
                 b.setOpaque(true);
-                b.setBorderPainted(true);
+                b.setBorder(BorderFactory.createEmptyBorder());
                 b.setFocusPainted(false);
+                b.setFocusable(false);
                 b.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         if (GridPanel.this.clickable && listener != null)
@@ -97,6 +107,11 @@ public class GridPanel extends JPanel {
 
     private JLabel corner(String text) {
         JLabel l = new JLabel(text, SwingConstants.CENTER);
+        l.setPreferredSize(new Dimension(CELL, CELL));
+        l.setOpaque(true);
+        l.setBackground(HEADER_BG);
+        l.setForeground(UITheme.ACCENT_DK);
+        l.setFont(l.getFont().deriveFont(Font.BOLD, 12f));
         return l;
     }
 
@@ -134,9 +149,11 @@ public class GridPanel extends JPanel {
                 b.setText("");
                 if (cell.isHit() && cell.hasShip()) {
                     b.setBackground(cell.getShip().isSunk() ? SUNK : HIT);
+                    b.setForeground(Color.WHITE);
                     b.setText("X");
                 } else if (cell.isHit()) {
                     b.setBackground(MISS);
+                    b.setForeground(UITheme.TEXT_MUTED);
                     b.setText("o");
                 } else if (cell.hasShip()) {
                     b.setBackground(SHIP);
@@ -187,9 +204,11 @@ public class GridPanel extends JPanel {
                     Cell truth = enemyOwnBoard.getCell(r, c);
                     if (truth.hasShip()) {
                         b.setBackground(truth.getShip().isSunk() ? SUNK : HIT);
+                        b.setForeground(Color.WHITE);
                         b.setText("X");
                     } else {
                         b.setBackground(MISS);
+                        b.setForeground(UITheme.TEXT_MUTED);
                         b.setText("o");
                     }
                 }

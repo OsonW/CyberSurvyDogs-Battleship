@@ -15,7 +15,10 @@ package battleship.gui;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -37,6 +40,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
 import javax.swing.Timer;
 
 import battleship.ai.SimpleAI;
@@ -62,6 +66,7 @@ public class BattleshipFrame extends JFrame {
     private JButton startButton;
     private JToggleButton orientToggle;
     private JComboBox<String> difficultyBox;
+    private JComboBox<String> whoStartsBox;
 
     // ----- Play screen state -----
     private Game game;
@@ -70,6 +75,7 @@ public class BattleshipFrame extends JFrame {
     private StatusPanel statusPanel;
     private Timer clockTimer;
     private int elapsedSeconds;
+    private String coinTossMessage; // status text describing how the starter was decided
 
     public BattleshipFrame() {
         super("Battleship Tournament - CyberSurvyDogs");
@@ -78,7 +84,13 @@ public class BattleshipFrame extends JFrame {
 
         root.add(buildSetupPanel(), "setup");
         root.add(buildPlayPanel(), "play");
-        setContentPane(root);
+
+        JPanel shell = new JPanel(new BorderLayout());
+        UITheme.fill(shell, UITheme.APP_BG);
+        shell.add(buildHeader(), BorderLayout.NORTH);
+        shell.add(root, BorderLayout.CENTER);
+        UITheme.fill(root, UITheme.APP_BG);
+        setContentPane(shell);
 
         installRotateKey();
         resetSetup();
@@ -131,30 +143,63 @@ public class BattleshipFrame extends JFrame {
         return bar;
     }
 
+    // =================== Header ===================
+
+    /** A slim app bar shown above both screens. */
+    private JPanel buildHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        UITheme.fill(header, UITheme.ACCENT_DK);
+        header.setBorder(BorderFactory.createEmptyBorder(10, UITheme.PAD, 10, UITheme.PAD));
+
+        JLabel title = new JLabel("Battleship Tournament");
+        title.setFont(UITheme.FONT_TITLE);
+        title.setForeground(Color.WHITE);
+        header.add(title, BorderLayout.WEST);
+
+        JLabel sub = new JLabel("Cyber Survy Dogs", SwingConstants.RIGHT);
+        sub.setFont(UITheme.FONT_BASE);
+        sub.setForeground(new Color(0xC9, 0xDC, 0xE6));
+        header.add(sub, BorderLayout.EAST);
+        return header;
+    }
+
     // =================== Setup screen ===================
 
     private JPanel buildSetupPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout(UITheme.PAD, UITheme.PAD));
+        panel.setBorder(UITheme.pad(UITheme.PAD));
+        UITheme.fill(panel, UITheme.APP_BG);
 
         setupGrid = new GridPanel("Place Your Fleet", true);
         setupGrid.setCellClickListener((r, c) -> handleSetupClick(r, c));
-        panel.add(setupGrid, BorderLayout.CENTER);
 
-        JPanel controls = new JPanel(new GridLayout(0, 1, 6, 6));
-        controls.setBorder(BorderFactory.createTitledBorder("Setup"));
+        // Center the grid at its fixed preferred size so it never stretches
+        // (e.g. when the controls panel width changes).
+        JPanel gridHolder = new JPanel(new GridBagLayout());
+        UITheme.fill(gridHolder, UITheme.APP_BG);
+        gridHolder.add(setupGrid);
+        panel.add(gridHolder, BorderLayout.CENTER);
+
+        JPanel controls = new JPanel(new GridLayout(0, 1, UITheme.GAP, UITheme.GAP));
+        controls.setBorder(UITheme.section("Setup"));
+        UITheme.fill(controls, UITheme.PANEL_BG);
 
         placeInstruction = new JLabel();
+        placeInstruction.setFont(UITheme.FONT_BOLD);
         controls.add(placeInstruction);
 
-        orientToggle = new JToggleButton("Orientation: Horizontal  (R to rotate)");
+        orientToggle = new JToggleButton("Orientation: Horizontal");
         orientToggle.addActionListener(e -> {
             horizontal = !orientToggle.isSelected();
-            orientToggle.setText("Orientation: "
-                    + (horizontal ? "Horizontal" : "Vertical") + "  (R to rotate)");
+            orientToggle.setText("Orientation: " + (horizontal ? "Horizontal" : "Vertical"));
             refreshPlacementPreview();
         });
         controls.add(orientToggle);
+
+        JLabel rotateHint = new JLabel("Press R to rotate");
+        rotateHint.setFont(UITheme.FONT_BASE);
+        rotateHint.setForeground(UITheme.TEXT_MUTED);
+        controls.add(rotateHint);
 
         JButton randomButton = new JButton("Random Placement");
         randomButton.addActionListener(e -> randomPlacement());
@@ -169,13 +214,22 @@ public class BattleshipFrame extends JFrame {
         difficultyBox.setSelectedItem("Advanced");
         controls.add(difficultyBox);
 
+        controls.add(new JLabel("Who Starts:"));
+        whoStartsBox = new JComboBox<>(new String[] { "Me", "AI", "Coin Toss" });
+        whoStartsBox.setSelectedItem("Coin Toss");
+        controls.add(whoStartsBox);
+
         startButton = new JButton("Start Game");
         startButton.setEnabled(false);
+        UITheme.primary(startButton);
         startButton.addActionListener(e -> startGame());
         controls.add(startButton);
 
         JPanel east = new JPanel(new BorderLayout());
+        UITheme.fill(east, UITheme.APP_BG);
         east.add(controls, BorderLayout.NORTH);
+        // Pin a consistent width so changing label text never reflows the layout.
+        controls.setPreferredSize(new Dimension(240, controls.getPreferredSize().height));
         panel.add(east, BorderLayout.EAST);
         return panel;
     }
@@ -204,12 +258,15 @@ public class BattleshipFrame extends JFrame {
     }
 
     private void updateInstruction() {
+        String body;
         if (placeIndex >= fleetToPlace.size()) {
-            placeInstruction.setText("All ships placed. Press Start Game.");
+            body = "All ships placed. Press Start Game.";
         } else {
             Ship s = fleetToPlace.get(placeIndex);
-            placeInstruction.setText("Place: " + s.getName() + " (size " + s.getSize() + ")");
+            body = "Place: " + s.getName() + " (size " + s.getSize() + ")";
         }
+        // Fixed width + HTML wrapping keeps the panel from reflowing on text changes.
+        placeInstruction.setText("<html><div style='width:200px'>" + body + "</div></html>");
     }
 
     private void handleSetupClick(int r, int c) {
@@ -242,7 +299,22 @@ public class BattleshipFrame extends JFrame {
         String difficulty = (String) difficultyBox.getSelectedItem();
         game = new Game(difficulty);
         transferFleet(humanSetupBoard, game.getHumanPlayer().getOwnBoard());
-        game.coinToss();
+
+        String whoStarts = (String) whoStartsBox.getSelectedItem();
+        if ("Me".equals(whoStarts)) {
+            game.setCurrentTurnHuman(true);
+            coinTossMessage = "You chose to start";
+        } else if ("AI".equals(whoStarts)) {
+            game.setCurrentTurnHuman(false);
+            coinTossMessage = "Computer starts";
+        } else { // Coin Toss
+            CoinTossDialog dialog = new CoinTossDialog(this);
+            dialog.setVisible(true); // modal: blocks until the player begins
+            boolean humanStart = dialog.isHumanStart();
+            game.setCurrentTurnHuman(humanStart);
+            coinTossMessage = humanStart ? "You win the toss!" : "Computer wins the toss";
+        }
+
         game.startGame();
         beginPlay(true);
     }
@@ -261,10 +333,12 @@ public class BattleshipFrame extends JFrame {
     // =================== Play screen ===================
 
     private JPanel buildPlayPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new BorderLayout(UITheme.PAD, UITheme.PAD));
+        panel.setBorder(UITheme.pad(UITheme.PAD));
+        UITheme.fill(panel, UITheme.APP_BG);
 
-        JPanel boards = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 0));
+        JPanel boards = new JPanel(new FlowLayout(FlowLayout.CENTER, UITheme.PAD + 4, 0));
+        UITheme.fill(boards, UITheme.APP_BG);
         yourGrid = new GridPanel("Your Fleet", false);
         enemyGrid = new GridPanel("Enemy Waters (click to fire)", true);
         enemyGrid.setCellClickListener((r, c) -> handleEnemyClick(r, c));
@@ -284,7 +358,8 @@ public class BattleshipFrame extends JFrame {
             elapsedSeconds = 0;
             statusPanel.clearLog();
             boolean humanFirst = game.isHumanTurn();
-            statusPanel.setCoinToss(humanFirst ? "You win the toss!" : "Computer wins the toss");
+            statusPanel.setCoinToss(coinTossMessage != null ? coinTossMessage
+                    : (humanFirst ? "You win the toss!" : "Computer wins the toss"));
             statusPanel.log(humanFirst ? "You go first." : "Computer goes first.");
         }
         renderAll();

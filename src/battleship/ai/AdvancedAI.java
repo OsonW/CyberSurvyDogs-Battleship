@@ -81,33 +81,72 @@ public class AdvancedAI implements AIStrategy {
 
     /**
      * Hunt by sweeping anti-diagonals from the top-left corner, restricted
-     * to the parity grid (r + c) % smallest == 0. Falls back to any untried
-     * cell (still in diagonal order) if the parity grid is exhausted.
+     * to the parity grid (r + c) % smallest == 0. Only fires at cells where
+     * some remaining ship could actually fit (skips dead cells boxed in by
+     * misses/sunk ships). Widens to any feasible untried cell if the parity
+     * grid has no feasible cells, and as a last resort any untried cell.
      */
     private int[] diagonalHuntCell() {
         int n = Board.SIZE;
         int s = smallestRemaining();
-        int[] parityHit = sweep(n, s);
+        int[] parityHit = sweep(n, s, true);
         if (parityHit != null) return parityHit;
-        int[] anyHit = sweep(n, 1);
+        int[] anyFeasible = sweep(n, 1, true);
+        if (anyFeasible != null) return anyFeasible;
+        int[] anyHit = sweep(n, 1, false);
         if (anyHit != null) return anyHit;
         return new int[] { 0, 0 };
     }
 
-    /** Visit cells in anti-diagonal order from (0,0); return first untried cell with (r+c) % step == 0. */
-    private int[] sweep(int n, int step) {
+    /**
+     * Visit cells in anti-diagonal order from (0,0); return the first untried
+     * cell with (r + c) % step == 0. When requireFeasible is true, also skip
+     * cells where no remaining ship can be placed.
+     */
+    private int[] sweep(int n, int step, boolean requireFeasible) {
         for (int d = 0; d <= 2 * (n - 1); d++) {
             if (d % step != 0) continue;
             int rStart = Math.max(0, d - (n - 1));
             int rEnd = Math.min(n - 1, d);
             for (int r = rStart; r <= rEnd; r++) {
                 int c = d - r;
-                if (!knownHit[r][c] && !knownMiss[r][c]) {
-                    return new int[] { r, c };
-                }
+                if (knownHit[r][c] || knownMiss[r][c]) continue;
+                if (requireFeasible && !cellCanHoldShip(r, c)) continue;
+                return new int[] { r, c };
             }
         }
         return null;
+    }
+
+    /**
+     * @return true if at least one remaining ship can be placed over (r, c)
+     *         without overlapping any known miss or known (sunk) hit. A cell
+     *         that cannot hold any remaining ship is "dead" and not worth a
+     *         shot - e.g. a lone gap between misses that would only fit a
+     *         size-1 ship once the size-2 ship is already sunk.
+     */
+    private boolean cellCanHoldShip(int r, int c) {
+        int n = Board.SIZE;
+        for (Integer sizeBox : remainingSizes) {
+            int s = sizeBox.intValue();
+            for (int offset = 0; offset < s; offset++) {
+                int startC = c - offset;
+                if (startC >= 0 && startC + s <= n && lineIsClear(r, startC, 0, 1, s)) return true;
+                int startR = r - offset;
+                if (startR >= 0 && startR + s <= n && lineIsClear(startR, c, 1, 0, s)) return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return true if all `len` cells from (r,c) along (dr,dc) are free of misses and known hits. */
+    private boolean lineIsClear(int r, int c, int dr, int dc, int len) {
+        for (int i = 0; i < len; i++) {
+            int rr = r + i * dr;
+            int cc = c + i * dc;
+            if (knownMiss[rr][cc] || knownHit[rr][cc]) return false;
+        }
+        return true;
     }
 
     private int smallestRemaining() {

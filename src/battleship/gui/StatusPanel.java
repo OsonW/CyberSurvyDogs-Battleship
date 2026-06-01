@@ -11,7 +11,6 @@ package battleship.gui;
 
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -21,6 +20,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 public class StatusPanel extends JPanel {
+    private static final int WIDTH = 250;
+
     private JLabel coinTossLabel = new JLabel("Coin toss: -");
     private JLabel turnLabel = new JLabel("Turn: -");
     private JLabel timerLabel = new JLabel("Time: 00:00");
@@ -29,12 +30,15 @@ public class StatusPanel extends JPanel {
 
     public StatusPanel() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(BorderFactory.createTitledBorder("Status"));
+        setBorder(UITheme.section("Status"));
+        UITheme.fill(this, UITheme.PANEL_BG);
+        setPreferredSize(new Dimension(WIDTH + 2 * UITheme.PAD, 0));
 
-        Font bold = getFont().deriveFont(Font.BOLD, 14f);
-        coinTossLabel.setFont(bold);
-        turnLabel.setFont(bold);
-        timerLabel.setFont(bold);
+        coinTossLabel.setFont(UITheme.FONT_LABEL);
+        turnLabel.setFont(UITheme.FONT_LABEL);
+        timerLabel.setFont(UITheme.FONT_LABEL);
+        coinTossLabel.setForeground(UITheme.ACCENT_DK);
+        statsLabel.setFont(UITheme.FONT_BASE);
 
         coinTossLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         turnLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -42,23 +46,28 @@ public class StatusPanel extends JPanel {
         statsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         add(coinTossLabel);
+        add(javax.swing.Box.createVerticalStrut(UITheme.GAP / 2));
         add(turnLabel);
+        add(javax.swing.Box.createVerticalStrut(UITheme.GAP / 2));
         add(timerLabel);
-        add(javax.swing.Box.createVerticalStrut(8));
+        add(javax.swing.Box.createVerticalStrut(UITheme.PAD));
         add(statsLabel);
-        add(javax.swing.Box.createVerticalStrut(8));
+        add(javax.swing.Box.createVerticalStrut(UITheme.PAD));
 
         JLabel logTitle = new JLabel("Game Log:");
+        logTitle.setFont(UITheme.FONT_BOLD);
         logTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(logTitle);
+        add(javax.swing.Box.createVerticalStrut(UITheme.GAP / 2));
 
         log.setEditable(false);
         log.setLineWrap(true);
         log.setWrapStyleWord(true);
+        log.setFont(UITheme.FONT_BASE);
         JScrollPane scroll = new JScrollPane(log);
         scroll.setAlignmentX(Component.LEFT_ALIGNMENT);
-        scroll.setPreferredSize(new Dimension(240, 220));
-        scroll.setMaximumSize(new Dimension(260, 400));
+        scroll.setPreferredSize(new Dimension(WIDTH, 240));
+        scroll.setMaximumSize(new Dimension(WIDTH, 600));
         add(scroll);
 
         setStats(0, 0, 0, 0, 0, 0, 5, 5);
