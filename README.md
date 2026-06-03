@@ -66,6 +66,7 @@ Use the Game menu to start a new game, save the current game, or load a save.
 
 ## Project structure
 
+```
 src/battleship/
   Main.java                       entry point
   model/                          Cell, Ship, Fleet, Board
@@ -74,4 +75,4 @@ src/battleship/
   game/                           Game, SaveManager
   gui/                            BattleshipFrame, GridPanel, StatusPanel, CoinTossDialog, UITheme
 test/battleship/ModelTests.java   logic test harness
-docs/superpowers/                 design spec and implementation plan
+```
