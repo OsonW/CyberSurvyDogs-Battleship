@@ -89,13 +89,10 @@ public class SaveManager {
 
             String difficulty = "Simple";
             String turn = "human";
-            Board humanBoard = null, aiBoard = null;
-            Game game = null;
 
-            String line;
-            // We need the Game built before placing ships; read difficulty first
-            // by buffering header lines until the first ship line.
+            // Buffer all lines so difficulty can be read before building the Game.
             java.util.List<String> lines = new java.util.ArrayList<String>();
+            String line;
             while ((line = br.readLine()) != null) lines.add(line);
 
             for (String l : lines) {
@@ -103,9 +100,9 @@ public class SaveManager {
                 else if (l.startsWith("turn=")) turn = l.substring("turn=".length()).trim();
             }
 
-            game = new Game(difficulty);
-            humanBoard = game.getHumanPlayer().getOwnBoard();
-            aiBoard = game.getAiPlayer().getOwnBoard();
+            Game game = new Game(difficulty);
+            Board humanBoard = game.getHumanPlayer().getOwnBoard();
+            Board aiBoard = game.getAiPlayer().getOwnBoard();
             humanBoard.reset();
             aiBoard.reset();
 

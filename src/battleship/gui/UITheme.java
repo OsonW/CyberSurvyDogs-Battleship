@@ -19,6 +19,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 public final class UITheme {
 
@@ -78,10 +79,14 @@ public final class UITheme {
 
     /** Give a button the accented "primary action" emphasis. */
     public static void primary(JButton b) {
+        // Basic UI keeps a solid, readable fill under Nimbus even when disabled,
+        // instead of a stray blue-outlined empty box.
+        b.setUI(new BasicButtonUI());
         b.setFont(FONT_LABEL);
         b.setForeground(Color.WHITE);
         b.setBackground(ACCENT);
         b.setOpaque(true);
+        b.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
         quiet(b);
     }
 

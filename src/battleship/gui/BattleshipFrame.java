@@ -38,7 +38,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
@@ -64,7 +63,7 @@ public class BattleshipFrame extends JFrame {
     private boolean horizontal = true;
     private JLabel placeInstruction;
     private JButton startButton;
-    private JToggleButton orientToggle;
+    private JButton orientButton;
     private JComboBox<String> difficultyBox;
     private JComboBox<String> whoStartsBox;
 
@@ -105,8 +104,8 @@ public class BattleshipFrame extends JFrame {
                 .put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0), "rotate");
         root.getActionMap().put("rotate", new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                if (orientToggle != null && orientToggle.isShowing()) {
-                    orientToggle.doClick();
+                if (orientButton != null && orientButton.isShowing()) {
+                    orientButton.doClick();
                 }
             }
         });
@@ -188,13 +187,14 @@ public class BattleshipFrame extends JFrame {
         placeInstruction.setFont(UITheme.FONT_BOLD);
         controls.add(placeInstruction);
 
-        orientToggle = new JToggleButton("Orientation: Horizontal");
-        orientToggle.addActionListener(e -> {
-            horizontal = !orientToggle.isSelected();
-            orientToggle.setText("Orientation: " + (horizontal ? "Horizontal" : "Vertical"));
+        orientButton = new JButton("Orientation: Horizontal");
+        UITheme.quiet(orientButton);
+        orientButton.addActionListener(e -> {
+            horizontal = !horizontal;
+            orientButton.setText("Orientation: " + (horizontal ? "Horizontal" : "Vertical"));
             refreshPlacementPreview();
         });
-        controls.add(orientToggle);
+        controls.add(orientButton);
 
         JLabel rotateHint = new JLabel("Press R to rotate");
         rotateHint.setFont(UITheme.FONT_BASE);
@@ -202,10 +202,12 @@ public class BattleshipFrame extends JFrame {
         controls.add(rotateHint);
 
         JButton randomButton = new JButton("Random Placement");
+        UITheme.quiet(randomButton);
         randomButton.addActionListener(e -> randomPlacement());
         controls.add(randomButton);
 
         JButton resetButton = new JButton("Reset Placement");
+        UITheme.quiet(resetButton);
         resetButton.addActionListener(e -> resetSetup());
         controls.add(resetButton);
 
@@ -289,8 +291,10 @@ public class BattleshipFrame extends JFrame {
         humanSetupBoard = new Board();
         new SimpleAI().placeShips(humanSetupBoard);
         placeIndex = fleetToPlace.size();
-        setupGrid.renderOwnBoard(humanSetupBoard);
+        // Clear the preview first: it still references the previous (now
+        // discarded) board and would otherwise repaint over the new ships.
         setupGrid.clearPlacementPreview();
+        setupGrid.renderOwnBoard(humanSetupBoard);
         updateInstruction();
         startButton.setEnabled(true);
     }

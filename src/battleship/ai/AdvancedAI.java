@@ -4,20 +4,17 @@
  * Date: 2026
  * File: AdvancedAI.java
  *
- * The expert computer opponent. It uses two modes:
- *   HUNT   - no unsunk hits known. Sweeps the board diagonally from the
- *            top-left corner, restricted to a parity pattern tuned to the
- *            smallest remaining ship: spacing = smallestRemaining - 1.
- *            (Smallest = 2 -> every 2nd cell along an anti-diagonal;
- *             smallest = 3 -> every 3rd; etc.) This guarantees every ship
- *            of length >= smallest must overlap at least one swept cell,
- *            so the AI cannot miss any ship while hunting. As ships are
- *            sunk and the smallest changes, the parity widens automatically.
- *   TARGET - one or more unsunk hits exist. Builds a probability density
- *            grid restricted to placements that cover the unsunk hits,
- *            weighting placements exponentially by how many unsunk hits
- *            they explain. Fires at the highest-scoring untried cell so
- *            it optimally finishes the ship under attack.
+ * The expert computer opponent. Every shot is the cell most likely to hold a
+ * ship, scored by probability density instead of any fixed scan order: for
+ * each remaining ship, count its legal placements (those not hitting a known
+ * miss or sunk cell) and add weight to the untried cells they cover, then fire
+ * at the highest-weighted cell, breaking ties at random.
+ *
+ *   HUNT   (no unsunk hits): every placement counts as 1, so density is how
+ *          many ships could sit on a cell. Parity and edge effects emerge on
+ *          their own.
+ *   TARGET (unsunk hits exist): only placements covering an unsunk hit count,
+ *          weighted 10^(hits covered) to finish the ship under attack.
  */
 package battleship.ai;
 
@@ -47,11 +44,7 @@ public class AdvancedAI implements AIStrategy {
     }
 
     public int[] chooseTarget(Board enemyView) {
-        if (!unsunkHits.isEmpty()) {
-            int[] t = bestTargetCell();
-            if (t != null) return t;
-        }
-        return diagonalHuntCell();
+        return bestByDensity();
     }
 
     public void reportResult(int r, int c, boolean hit, boolean sunk, int sunkSize) {
@@ -80,136 +73,69 @@ public class AdvancedAI implements AIStrategy {
     }
 
     /**
-     * Hunt by sweeping anti-diagonals from the top-left corner, restricted
-     * to the parity grid (r + c) % smallest == 0. Only fires at cells where
-     * some remaining ship could actually fit (skips dead cells boxed in by
-     * misses/sunk ships). Widens to any feasible untried cell if the parity
-     * grid has no feasible cells, and as a last resort any untried cell.
+     * Build the density grid and return a random untried cell of maximum
+     * density (the optimal shot). HUNT and TARGET differ only in which
+     * placements count and how they are weighted; see {@link #accumulate}.
      */
-    private int[] diagonalHuntCell() {
+    private int[] bestByDensity() {
         int n = Board.SIZE;
-        int s = smallestRemaining();
-        int[] parityHit = sweep(n, s, true);
-        if (parityHit != null) return parityHit;
-        int[] anyFeasible = sweep(n, 1, true);
-        if (anyFeasible != null) return anyFeasible;
-        int[] anyHit = sweep(n, 1, false);
-        if (anyHit != null) return anyHit;
-        return new int[] { 0, 0 };
-    }
-
-    /**
-     * Visit cells in anti-diagonal order from (0,0); return the first untried
-     * cell with (r + c) % step == 0. When requireFeasible is true, also skip
-     * cells where no remaining ship can be placed.
-     */
-    private int[] sweep(int n, int step, boolean requireFeasible) {
-        for (int d = 0; d <= 2 * (n - 1); d++) {
-            if (d % step != 0) continue;
-            int rStart = Math.max(0, d - (n - 1));
-            int rEnd = Math.min(n - 1, d);
-            for (int r = rStart; r <= rEnd; r++) {
-                int c = d - r;
-                if (knownHit[r][c] || knownMiss[r][c]) continue;
-                if (requireFeasible && !cellCanHoldShip(r, c)) continue;
-                return new int[] { r, c };
-            }
-        }
-        return null;
-    }
-
-    /**
-     * @return true if at least one remaining ship can be placed over (r, c)
-     *         without overlapping any known miss or known (sunk) hit. A cell
-     *         that cannot hold any remaining ship is "dead" and not worth a
-     *         shot - e.g. a lone gap between misses that would only fit a
-     *         size-1 ship once the size-2 ship is already sunk.
-     */
-    private boolean cellCanHoldShip(int r, int c) {
-        int n = Board.SIZE;
-        for (Integer sizeBox : remainingSizes) {
-            int s = sizeBox.intValue();
-            for (int offset = 0; offset < s; offset++) {
-                int startC = c - offset;
-                if (startC >= 0 && startC + s <= n && lineIsClear(r, startC, 0, 1, s)) return true;
-                int startR = r - offset;
-                if (startR >= 0 && startR + s <= n && lineIsClear(startR, c, 1, 0, s)) return true;
-            }
-        }
-        return false;
-    }
-
-    /** @return true if all `len` cells from (r,c) along (dr,dc) are free of misses and known hits. */
-    private boolean lineIsClear(int r, int c, int dr, int dc, int len) {
-        for (int i = 0; i < len; i++) {
-            int rr = r + i * dr;
-            int cc = c + i * dc;
-            if (knownMiss[rr][cc] || knownHit[rr][cc]) return false;
-        }
-        return true;
-    }
-
-    private int smallestRemaining() {
-        int min = Integer.MAX_VALUE;
-        for (Integer sz : remainingSizes) if (sz.intValue() < min) min = sz.intValue();
-        return min == Integer.MAX_VALUE ? 1 : min;
-    }
-
-    /**
-     * Target mode: build a probability density grid over all remaining ship
-     * placements that are consistent with what we know AND cover at least
-     * one unsunk hit. Placements covering more unsunk hits get exponentially
-     * more weight (10^covered) so the AI strongly prefers shots that finish
-     * the ship currently under attack.
-     */
-    private int[] bestTargetCell() {
-        int n = Board.SIZE;
+        boolean targeting = !unsunkHits.isEmpty();
         long[][] prob = new long[n][n];
 
         for (Integer sizeBox : remainingSizes) {
             int s = sizeBox.intValue();
             for (int r = 0; r < n; r++) {
                 for (int c = 0; c < n; c++) {
-                    if (c + s <= n) {
-                        int covered = placementCoverage(r, c, s, true);
-                        if (covered > 0) {
-                            long w = pow10(covered);
-                            for (int i = 0; i < s; i++) {
-                                if (!knownHit[r][c + i] && !knownMiss[r][c + i]) {
-                                    prob[r][c + i] += w;
-                                }
-                            }
-                        }
-                    }
-                    if (r + s <= n) {
-                        int covered = placementCoverage(r, c, s, false);
-                        if (covered > 0) {
-                            long w = pow10(covered);
-                            for (int i = 0; i < s; i++) {
-                                if (!knownHit[r + i][c] && !knownMiss[r + i][c]) {
-                                    prob[r + i][c] += w;
-                                }
-                            }
-                        }
-                    }
+                    if (c + s <= n) accumulate(prob, r, c, s, true, targeting);
+                    if (r + s <= n) accumulate(prob, r, c, s, false, targeting);
                 }
             }
         }
 
+        // Pick a random cell among those of maximum weight (all equally optimal).
         long best = 0;
-        int br = -1, bc = -1;
+        List<int[]> bestCells = new ArrayList<int[]>();
         for (int r = 0; r < n; r++) {
             for (int c = 0; c < n; c++) {
                 if (knownHit[r][c] || knownMiss[r][c]) continue;
-                if (prob[r][c] > best) {
-                    best = prob[r][c];
-                    br = r;
-                    bc = c;
+                long p = prob[r][c];
+                if (p > best) {
+                    best = p;
+                    bestCells.clear();
+                    bestCells.add(new int[] { r, c });
+                } else if (p == best && p > 0) {
+                    bestCells.add(new int[] { r, c });
                 }
             }
         }
-        if (br < 0) return null;
-        return new int[] { br, bc };
+        if (bestCells.isEmpty()) return firstUntried();
+        return bestCells.get(random.nextInt(bestCells.size()));
+    }
+
+    /**
+     * Add one ship placement's contribution to the density grid. Skips
+     * impossible placements (overlapping a miss or sunk cell). In TARGET mode
+     * ignores placements covering no unsunk hit; otherwise weights the
+     * placement 10^(hits covered), which is 1 in HUNT mode.
+     */
+    private void accumulate(long[][] prob, int r, int c, int s, boolean horiz, boolean targeting) {
+        int covered = placementCoverage(r, c, s, horiz);
+        if (covered < 0) return;
+        if (targeting && covered == 0) return;
+        long w = pow10(covered);
+        for (int i = 0; i < s; i++) {
+            int rr = horiz ? r : r + i;
+            int cc = horiz ? c + i : c;
+            if (!knownHit[rr][cc] && !knownMiss[rr][cc]) prob[rr][cc] += w;
+        }
+    }
+
+    /** Last-resort fallback: the first untried cell in row-major order. */
+    private int[] firstUntried() {
+        for (int r = 0; r < Board.SIZE; r++)
+            for (int c = 0; c < Board.SIZE; c++)
+                if (!knownHit[r][c] && !knownMiss[r][c]) return new int[] { r, c };
+        return new int[] { 0, 0 };
     }
 
     /**

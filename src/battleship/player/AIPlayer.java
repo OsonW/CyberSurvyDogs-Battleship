@@ -31,6 +31,5 @@ public class AIPlayer extends Player {
         strategy.reportResult(r, c, hit, sunk, sunkSize);
     }
 
-    public void setStrategy(AIStrategy s) { this.strategy = s; }
     public String getDifficulty() { return difficulty; }
 }

@@ -118,9 +118,9 @@ public class CoinTossDialog extends JDialog {
         humanStart = (landedHeads == playerCalledHeads);
         String face = landedHeads ? "HEADS" : "TAILS";
         String called = playerCalledHeads ? "Heads" : "Tails";
-        message.setText("<html><div style='width:380px;text-align:center'>It's " + face
+        message.setText("<html><center>It's " + face
                 + "! &nbsp; You called " + called + "<br>"
-                + (humanStart ? "You start!" : "Computer starts.") + "</div></html>");
+                + (humanStart ? "You start!" : "Computer starts.") + "</center></html>");
         headsButton.setVisible(false);
         tailsButton.setVisible(false);
         beginButton.setVisible(true);

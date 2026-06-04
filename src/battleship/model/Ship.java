@@ -36,7 +36,6 @@ public class Ship {
     public boolean isSunk() { return sunk; }
     public String getName() { return name; }
     public int getSize() { return size; }
-    public int getHits() { return hits; }
     public ArrayList<Cell> getCells() { return cells; }
 
     /** Link a cell to this ship (called during placement). */

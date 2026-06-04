@@ -113,7 +113,6 @@ public class Game {
 
     public HumanPlayer getHumanPlayer() { return humanPlayer; }
     public AIPlayer getAiPlayer() { return aiPlayer; }
-    public Player getCurrentTurn() { return currentTurn; }
     public boolean isHumanTurn() { return currentTurn == humanPlayer; }
     public boolean isGameOver() { return gameOver; }
     public String getWinner() { return winner; }
