@@ -22,10 +22,18 @@ import java.io.InputStream;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 
 public final class SoundPlayer {
 
     private static final String DIR = "/battleship/resources/sounds/";
+
+    /**
+     * How much to attenuate one-shot effects, in decibels. The effect WAVs are
+     * mastered hot (they sound bass-boosted at full volume), so we pull them
+     * down. Negative is quieter; each -6 dB roughly halves perceived loudness.
+     */
+    private static final float EFFECT_GAIN_DB = -12.0f;
 
     /** Whether any audio plays at all (handy for a future mute button). */
     private static boolean enabled = true;
@@ -55,6 +63,7 @@ public final class SoundPlayer {
         try {
             Clip clip = load(name);
             if (clip == null) return;
+            applyGain(clip, EFFECT_GAIN_DB);
             // Release the Clip's resources once playback finishes.
             clip.addLineListener(event -> {
                 if (event.getType() == javax.sound.sampled.LineEvent.Type.STOP) {
@@ -94,6 +103,22 @@ public final class SoundPlayer {
                 // ignore
             }
             loopClip = null;
+        }
+    }
+
+    /**
+     * Attenuate (or boost) a Clip by the given decibel amount. Clamped to the
+     * range the underlying line actually supports. Does nothing if the line has
+     * no gain control, so playback still works on minimal audio systems.
+     */
+    private static void applyGain(Clip clip, float gainDb) {
+        try {
+            if (!clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) return;
+            FloatControl gain = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            float clamped = Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), gainDb));
+            gain.setValue(clamped);
+        } catch (Exception e) {
+            // No gain control available: leave volume untouched.
         }
     }
 
