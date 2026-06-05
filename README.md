@@ -5,6 +5,14 @@ Java + Swing, built as a standard Eclipse project.
 
 > **Group members:** Oson Wang, Olin Wang, Willey Yao
 
+## Tech Stack
+
+- **Language:** Java 17+ (uses only the standard library)
+- **IDE:** Eclipse (standard Java project — `.classpath` / `.project` included)
+- **GUI:** Java Swing + AWT
+- **Libraries:** None — no external dependencies
+- **Testing:** Custom lightweight assertion harness (`test/battleship/ModelTests.java`); no JUnit required
+
 ## Features
 
 - 10x10 grid (rows A-J, columns 1-10), standard 5-ship fleet

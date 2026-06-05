@@ -96,6 +96,8 @@ public class BattleshipFrame extends JFrame {
         cards.show(root, "setup");
         pack();
         setLocationRelativeTo(null);
+
+        SoundPlayer.loop("music"); // background music for menu + gameplay
     }
 
     /** Bind the R key to rotate ship orientation while the setup screen is showing. */
@@ -122,6 +124,7 @@ public class BattleshipFrame extends JFrame {
             stopTimer();
             resetSetup();
             cards.show(root, "setup");
+            SoundPlayer.loop("music"); // restart background music (endscreen may have stopped it)
         });
 
         JMenuItem save = new JMenuItem("Save Game");
@@ -427,6 +430,8 @@ public class BattleshipFrame extends JFrame {
         String winner = game.getWinner();
         statusPanel.setTurn("Game over");
         statusPanel.log("=== " + winner + " wins! ===");
+        SoundPlayer.stopLoop();        // stop background music
+        SoundPlayer.play("endscreen"); // play the win/endscreen track
         JOptionPane.showMessageDialog(this, winner + " wins!", "Game Over",
                 JOptionPane.INFORMATION_MESSAGE);
     }
@@ -470,6 +475,7 @@ public class BattleshipFrame extends JFrame {
         if (res.startsWith("SUNK:")) statusPanel.log("You sank the Computer's " + res.substring(5) + "!");
         else if (res.equals("HIT")) statusPanel.log("You fired at " + at + ": HIT");
         else statusPanel.log("You fired at " + at + ": miss");
+        playShotSound(res);
     }
 
     private void logAIShot(int r, int c, String res) {
@@ -477,6 +483,14 @@ public class BattleshipFrame extends JFrame {
         if (res.startsWith("SUNK:")) statusPanel.log("Computer sank your " + res.substring(5) + "!");
         else if (res.equals("HIT")) statusPanel.log("Computer fired at " + at + ": HIT");
         else statusPanel.log("Computer fired at " + at + ": miss");
+        playShotSound(res);
+    }
+
+    /** Pick the sound effect matching a fire result (sunk/hit/miss). */
+    private void playShotSound(String res) {
+        if (res.startsWith("SUNK:")) SoundPlayer.play("sunk");
+        else if (res.equals("HIT")) SoundPlayer.play("hit");
+        else SoundPlayer.play("miss");
     }
 
     private String coord(int r, int c) {
