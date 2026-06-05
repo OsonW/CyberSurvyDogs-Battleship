@@ -8,9 +8,9 @@ Java + Swing, built as a standard Eclipse project.
 ## Tech Stack
 
 - **Language:** Java 17+ (uses only the standard library)
-- **IDE:** Eclipse (standard Java project — `.classpath` / `.project` included)
+- **IDE:** Eclipse (standard Java project: `.classpath` / `.project` included)
 - **GUI:** Java Swing + AWT
-- **Libraries:** None — no external dependencies
+- **Libraries:** None, no external dependencies
 - **Testing:** Custom lightweight assertion harness (`test/battleship/ModelTests.java`); no JUnit required
 
 ## Features
@@ -38,8 +38,6 @@ Java + Swing, built as a standard Eclipse project.
   - At game start the computer's fleet is written to `ai_ships.txt`
     (a readable map + each ship's coordinates) so it can be printed and
     verified while playing.
-  - Save a game in progress and load it later (Game menu) — the elapsed
-    timer and whose-turn state are restored too.
 - Clear win condition with an end-of-game dialog.
 
 ## How to run
